@@ -1,28 +1,114 @@
-import React from 'react';
+/* eslint-disable react-hooks/exhaustive-deps */
+import React, { useCallback } from 'react';
 import cn from 'classnames';
 import { Todo } from '../types/Todo';
+import { Error } from '../types/enumError';
+import { addTodo, updateTodo, USER_ID } from '../api/todos';
 
 type Props = {
   todos: Todo[];
-  completeAll: () => void;
   activeCount: number;
-  handleSubmit: (event: React.FormEvent) => void;
   inputRef: React.RefObject<HTMLInputElement>;
   newTodoTitle: string;
-  setNewTodoTitle: React.Dispatch<React.SetStateAction<string>>;
+  setNewTodoTitle: (title: string) => void;
   isInputDisabled: boolean;
+  setErrorMessage: React.Dispatch<React.SetStateAction<Error>>;
+  setTempTodo: React.Dispatch<React.SetStateAction<Todo | null>>;
+  setIsInputDisabled: React.Dispatch<React.SetStateAction<boolean>>;
+  setTodos: React.Dispatch<React.SetStateAction<Todo[]>>;
 };
 
 export const Header: React.FC<Props> = ({
   todos,
-  completeAll,
   activeCount,
-  handleSubmit,
   inputRef,
   newTodoTitle,
   setNewTodoTitle,
   isInputDisabled,
+  setErrorMessage,
+  setTempTodo,
+  setIsInputDisabled,
+  setTodos,
 }) => {
+  function addPost(loadingTodo: Todo) {
+    setTempTodo(loadingTodo);
+    setErrorMessage(Error.Default);
+    setIsInputDisabled(true);
+
+    addTodo({
+      userId: loadingTodo.userId,
+      title: loadingTodo.title,
+      completed: loadingTodo.completed,
+    })
+      .then(createdTodo => {
+        setTodos(currentTodos => [...currentTodos, createdTodo]);
+        setNewTodoTitle('');
+      })
+      .catch(() => {
+        setErrorMessage(Error.Add);
+        setTimeout(() => setErrorMessage(Error.Default), 3000);
+      })
+      .finally(() => {
+        setTempTodo(null);
+        setIsInputDisabled(false);
+        inputRef.current?.focus();
+      });
+  }
+
+  function handleSubmit(event: React.FormEvent) {
+    event.preventDefault();
+
+    const trimmedTitle = newTodoTitle.trim();
+
+    if (!trimmedTitle) {
+      setErrorMessage(Error.Empty);
+      setTimeout(() => setErrorMessage(Error.Default), 3000);
+
+      return;
+    }
+
+    const loadingTodo: Todo = {
+      userId: USER_ID,
+      title: trimmedTitle,
+      completed: false,
+      id: 0,
+    };
+
+    setTempTodo(loadingTodo);
+    addPost(loadingTodo);
+  }
+
+  const completeAll = useCallback(async () => {
+    const allCompleted = todos.every(todo => todo.completed);
+    const newCompletionState = !allCompleted;
+
+    const todosToUpdate = todos.filter(
+      todo => todo.completed !== newCompletionState,
+    );
+
+    const failedIds: number[] = [];
+
+    for (const todo of todosToUpdate) {
+      try {
+        await updateTodo(todo.id, newCompletionState, todo.title);
+      } catch {
+        failedIds.push(todo.id);
+      }
+    }
+
+    setTodos(currentTodos =>
+      currentTodos.map(todo =>
+        failedIds.includes(todo.id)
+          ? todo
+          : { ...todo, completed: newCompletionState },
+      ),
+    );
+
+    if (failedIds.length > 0) {
+      setErrorMessage(Error.Update);
+    }
+  }, [todos, setTodos, updateTodo, setErrorMessage]);
+
   return (
     <header className="todoapp__header">
       {!!todos.length && (
