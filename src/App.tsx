@@ -49,30 +49,6 @@ export const App = () => {
         return todos;
     }
   }, [todos, filteredBy]);
-  //   setLoadingTodoId(todoId);
-  //   deleteTodo(todoId)
-  //     .then(() => {
-  //       setTodos(currentTodos =>
-  //         currentTodos.filter(todo => todo.id !== todoId),
-  //       );
-  //     })
-  //     .catch(() => {
-  //       setErrorMessage(Error.Delete);
-  //       setTimeout(() => setErrorMessage(Error.Default), 3000);
-  //     })
-  //     .finally(() => {
-  //       setLoadingTodoId(null);
-  //       inputRef.current?.focus();
-  //     });
-  // }, []);
-
-  // const deleteCompleted = useCallback(() => {
-  //   const completedIds = todos
-  //     .filter(todo => todo.completed)
-  //     .map(todo => todo.id);
-
-  //   completedIds.forEach(id => deletePost(id));
-  // }, [todos, deletePost]);
 
   useEffect(() => {
     loadTodos();

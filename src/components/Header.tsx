@@ -58,11 +58,21 @@ export const Header: React.FC<Props> = ({
   function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
 
+    let timerId;
+
     const trimmedTitle = newTodoTitle.trim();
 
     if (!trimmedTitle) {
       setErrorMessage(Error.Empty);
-      setTimeout(() => setErrorMessage(Error.Default), 3000);
+
+      if (timerId) {
+        clearTimeout(timerId);
+      }
+
+      timerId = setTimeout(() => {
+        setErrorMessage(Error.Default);
+        timerId = null;
+      }, 3000);
 
       return;
     }
@@ -78,7 +88,7 @@ export const Header: React.FC<Props> = ({
     addPost(loadingTodo);
   }
 
-  const completeAll = useCallback(async () => {
+  const handleCompleteAll = useCallback(async () => {
     const allCompleted = todos.every(todo => todo.completed);
     const newCompletionState = !allCompleted;
 
@@ -113,7 +123,7 @@ export const Header: React.FC<Props> = ({
     <header className="todoapp__header">
       {!!todos.length && (
         <button
-          onClick={completeAll}
+          onClick={handleCompleteAll}
           type="button"
           className={cn('todoapp__toggle-all', activeCount === 0 && 'active')}
           data-cy="ToggleAllButton"
